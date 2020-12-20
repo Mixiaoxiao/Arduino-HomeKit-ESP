@@ -5,7 +5,7 @@ Currently, only for ESP32 with hardware acceleration. ESP32-S2, ESP32-C3 and fut
 
 Tested on my ESP32 board, works fine. 
 
-But the performance seems not good as [Arduino-HomeKit-ESP32](https://github.com/Mixiaoxiao/Arduino-HomeKit-ESP32).
+The performance is awesome!!!
 
 The serial log is [here](https://raw.github.com/Mixiaoxiao/Arduino-HomeKit-ESP/master/extras/SerialLog.txt)
 

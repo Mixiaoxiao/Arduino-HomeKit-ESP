@@ -190,56 +190,22 @@ static inline int mu_bn_a_mul_b_mod_c(mu_bn_t *result, mu_bn_t *a, mu_bn_t *b, m
     return 0;
 }
 #else
-static inline int mu_bn_a_exp_b_mod_c(mu_bn_t *result, mu_bn_t *a, mu_bn_t *b, mu_bn_t *c, mu_bn_ctx_t *ctx)
-{
-    return mbedtls_mpi_exp_mod(result, a, b, c, (mu_bn_t *) ctx);
-}
 
 #include "port/bignum.h"
+#include "port/bignum_impl.h"
 
-///* Z = (X * Y) mod M
-//   Not an mbedTLS function
-//*/
-//int esp_mpi_mul_mpi_mod(mbedtls_mpi *Z, const mbedtls_mpi *X, const mbedtls_mpi *Y, const mbedtls_mpi *M)
-//{
-//    int ret = 0;
-//
-//    size_t x_bits = mbedtls_mpi_bitlen(X);
-//    size_t y_bits = mbedtls_mpi_bitlen(Y);
-//    size_t m_bits = mbedtls_mpi_bitlen(M);
-//    size_t z_bits = MIN(m_bits, x_bits + y_bits);
-//    size_t x_words = bits_to_words(x_bits);
-//    size_t y_words = bits_to_words(y_bits);
-//    size_t m_words = bits_to_words(m_bits);
-//    size_t z_words = bits_to_words(z_bits);
-//    size_t hw_words = esp_mpi_hardware_words(MAX(x_words, MAX(y_words, m_words))); /* longest operand */
-//    mbedtls_mpi Rinv;
-//    mbedtls_mpi_uint Mprime;
-//
-//    /* Calculate and load the first stage montgomery multiplication */
-//    mbedtls_mpi_init(&Rinv);
-//    MBEDTLS_MPI_CHK(calculate_rinv(&Rinv, M, hw_words));
-//    Mprime = modular_inverse(M);
-//
-//    esp_mpi_enable_hardware_hw_op();
-//    /* Load and start a (X * Y) mod M calculation */
-//    esp_mpi_mul_mpi_mod_hw_op(X, Y, M, &Rinv, Mprime, hw_words);
-//
-//    MBEDTLS_MPI_CHK(mbedtls_mpi_grow(Z, z_words));
-//
-//    esp_mpi_read_result_hw_op(Z, z_words);
-//    Z->s = X->s * Y->s;
-//
-//cleanup:
-//    mbedtls_mpi_free(&Rinv);
-//    esp_mpi_disable_hardware_hw_op();
-//
-//    return ret;
-//}
+static inline int mu_bn_a_exp_b_mod_c(mu_bn_t *result, mu_bn_t *a, mu_bn_t *b, mu_bn_t *c, mu_bn_ctx_t *ctx)
+{
+    //return mbedtls_mpi_exp_mod(result, a, b, c, (mu_bn_t *) ctx);
+	// wangbin changed
+	printf("esp_mpi_exp_mod\n");
+	return esp_mpi_exp_mod(result, a, b, c, (mu_bn_t *) ctx);
+}
 
 
 static inline int mu_bn_a_mul_b_mod_c(mu_bn_t *result, mu_bn_t *a, mu_bn_t *b, mu_bn_t *c, mu_bn_ctx_t *ctx)
 {
+	printf("esp_mpi_mul_mpi_mod\n");
     return esp_mpi_mul_mpi_mod(result, a, b, c);
 }
 #endif /* !CONFIG_IDF_TARGET_ESP8266 */

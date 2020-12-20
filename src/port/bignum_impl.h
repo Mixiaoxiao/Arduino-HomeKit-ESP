@@ -14,7 +14,13 @@
 
 #if CONFIG_IDF_TARGET_ESP32
 #define ESP_MPI_USE_MONT_EXP
+
+#define MBEDTLS_MPI_EXP_MOD_ALT
+//#define MBEDTLS_MPI_MUL_MPI_ALT
 #endif
+
+
+int esp_mpi_exp_mod( mbedtls_mpi *Z, const mbedtls_mpi *X, const mbedtls_mpi *Y, const mbedtls_mpi *M, mbedtls_mpi *_Rinv );
 
 /**
  * @brief Enable the MPI hardware and acquire the lock

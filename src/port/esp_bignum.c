@@ -36,6 +36,11 @@
 
 #include <mbedtls/bignum.h>
 
+// wangbin added
+#if !defined(SOC_RSA_MAX_BIT_LEN)
+#define SOC_RSA_MAX_BIT_LEN    (4096)
+#endif
+
 
 /* Some implementation notes:
  *
@@ -273,7 +278,8 @@ cleanup2:
  * (See RSA Accelerator section in Technical Reference for more about Mprime, Rinv)
  *
  */
-int mbedtls_mpi_exp_mod( mbedtls_mpi *Z, const mbedtls_mpi *X, const mbedtls_mpi *Y, const mbedtls_mpi *M, mbedtls_mpi *_Rinv )
+// wangbin changed mbedtls_mpi_exp_mod -> esp_mpi_exp_mod
+int esp_mpi_exp_mod( mbedtls_mpi *Z, const mbedtls_mpi *X, const mbedtls_mpi *Y, const mbedtls_mpi *M, mbedtls_mpi *_Rinv )
 {
     int ret = 0;
     size_t x_words = mpi_words(X);

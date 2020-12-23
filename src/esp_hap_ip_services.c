@@ -174,9 +174,55 @@ static int hap_http_pair_verify_handler(httpd_req_t *req)
                         sizeof(timeout)) < 0) {
                  ESP_MFI_DEBUG(ESP_MFI_DEBUG_ERR, "setsockopt on pair verified socket failed for SO_SNDTIMEO");
             }
+
+
+            // ----
+            const int s = fd;
+            const int yes = 1; /* enable sending keepalive probes for socket */
+			setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, &yes, sizeof(yes));
+
+			const int idle = 15; /* 180 sec idle before start sending probes */
+			setsockopt(s, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle));
+
+			const int interval = 5; /* 30 sec between probes */
+			setsockopt(s, IPPROTO_TCP, TCP_KEEPINTVL, &interval, sizeof(interval));
+
+			const int maxpkt = 3; /* Drop connection after 4 probes without response */
+			setsockopt(s, IPPROTO_TCP, TCP_KEEPCNT, &maxpkt, sizeof(maxpkt));
+            // ----
+
             hap_platform_httpd_set_sess_ctx(req, ctx, hap_free_session, true);
             httpd_sess_set_send_override(hap_priv.server, fd, hap_httpd_send);
             httpd_sess_set_recv_override(hap_priv.server, fd, hap_httpd_recv);
+
+
+            hap_secure_session_t* session  = (hap_secure_session_t *)ctx;
+            int socket = session->conn_identifier;
+
+            //struct sockaddr_storage addr;
+            struct sockaddr_in6 addr;
+            socklen_t len = sizeof addr;
+            getpeername(fd, (struct sockaddr*)&addr, &len);
+            /*
+            struct sockaddr_in *sockaddr = (struct sockaddr_in *)&addr;
+            in_addr_t a = sockaddr->sin_addr.s_addr;
+            union {
+            	uint8_t ui8[4];
+            	uint32_t ui32;
+            }ip;
+            ip.ui32 = (uint32_t)a;
+			*/
+            //uint16_t port = ntohs(sockaddr->sin6_port);
+            uint16_t port = addr.sin6_port;
+            printf("---- STATE_VERIFIED ----\n");
+            //printf("ip32: %u\n", a);
+            //printf("fd: %d, %u.%u.%u.%u:%u \n", socket,
+            		//ip.ui8[0], ip.ui8[1], ip.ui8[2], ip.ui8[3], port);
+            //https://github.com/espressif/esp-idf/issues/4863
+            printf("fd: %d, remote: %s:%u\n", fd, inet_ntoa(addr.sin6_addr.un.u32_addr[3]), port);
+            printf("ctrl: %s\n", session->ctrl->info.id);
+
+            printf("------------------------\n");
 		}
 	}
 	return ret1;

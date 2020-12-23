@@ -95,12 +95,35 @@ int hap_encrypt_data(hap_encrypt_frame_t *frame, hap_secure_session_t *session,
 	return 2 + buflen + 16; /* Total length of the encrypted data */
 }
 
+#include <esp_hap_main.h>
+void hap_close_ctrl_sessions_fix(hap_secure_session_t *session)
+{
+	if (!session)
+		return;
+	int i;
+	printf("---- hap_close_ctrl_sessions_fix begin -----\n");
+	for (i = 0; i < HAP_MAX_SESSIONS; i++) {
+        if (!hap_priv.sessions[i])
+            continue;
+		if (hap_priv.sessions[i] == session) {
+            hap_report_event(HAP_EVENT_CTRL_DISCONNECTED, (session->ctrl->info.id),
+                    sizeof((session->ctrl->info.id)));
+			/* TODO: Use some generic function and not a direct HTTPD function
+			 */
+            printf("---- trigger_close fd: %d\n", hap_priv.sessions[i]->conn_identifier);
+            httpd_sess_trigger_close(hap_priv.server, hap_priv.sessions[i]->conn_identifier);
+		}
+	}
+	printf("---- hap_close_ctrl_sessions_fix end ----\n");
+}
+
 int hap_decrypt_error(hap_secure_session_t *session)
 {
 	ESP_MFI_DEBUG(ESP_MFI_DEBUG_INFO, "Decryption error/Connection lost. Marking session as invalid");
 	if (session) {
 		session->state = STATE_INVALID;
-        hap_close_ctrl_sessions(session->ctrl);
+        //hap_close_ctrl_sessions(session->ctrl);
+        hap_close_ctrl_sessions_fix(session);
 	}
 	return HAP_FAIL;
 }
@@ -115,8 +138,20 @@ int hap_decrypt_data(hap_decrypt_frame_t *frame, hap_secure_session_t *session,
 		frame->session = session;
 	}
 	if ((frame->pkt_size - frame->bytes_read) == 0) {
-		if (read_fn(frame->data, 2, context) < 2)
+		int len = read_fn(frame->data, 2, context);
+		if (len == 0) { //nothing received, but we should NOT consider this is a 'decrypt_error'
+			return 0;
+		}
+		if (len < 2) {
+			//len is -1 or 1
+			//len = -1: socket disconnected
+			//len =  1: try receiving 2 bytes timeout (SO_RCVTIMEO is set in esp_hap_ip_services.c)
+			printf("---- error 1 ----, len: %d\n", len);
+			//Decryption error/Connection lost on ESP32 with multiple Apple devices running Home
+			//https://github.com/espressif/esp-homekit-sdk/issues/14
+			//---- error 1 ----, len: 0
 			return hap_decrypt_error(session);
+		}
 
 		frame->pkt_size = get_u16_le(frame->data);
 		frame->bytes_read = 0;
@@ -124,8 +159,10 @@ int hap_decrypt_data(hap_decrypt_frame_t *frame, hap_secure_session_t *session,
 		while (bytes_to_read) {
 			int num_bytes = read_fn(&frame->data[frame->bytes_read],
 					bytes_to_read, context);
-			if (num_bytes <= 0)
+			if (num_bytes <= 0) {
+				printf("---- error 2 ----\n");
 				return hap_decrypt_error(session);
+			}
 			bytes_to_read -= num_bytes;
 			frame->bytes_read += num_bytes;
 		}
@@ -140,6 +177,7 @@ int hap_decrypt_data(hap_decrypt_frame_t *frame, hap_secure_session_t *session,
                     &frame->data[frame->bytes_read], aad, 2, newnonce, session->decrypt_key);
         if (ret != 0) { 
 			ESP_MFI_DEBUG(ESP_MFI_DEBUG_INFO, "AEAD decryption failure");
+			printf("---- error 3 ----\n");
 			return hap_decrypt_error(session);
 		}
 		frame->bytes_read = 0;

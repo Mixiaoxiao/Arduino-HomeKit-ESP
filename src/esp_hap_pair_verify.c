@@ -66,6 +66,7 @@ void hap_close_ctrl_sessions(hap_ctrl_data_t *ctrl)
 	if (!ctrl)
 		return;
 	int i;
+	printf("---- hap_close_ctrl_sessions begin -----\n");
 	for (i = 0; i < HAP_MAX_SESSIONS; i++) {
         if (!hap_priv.sessions[i])
             continue;
@@ -74,9 +75,12 @@ void hap_close_ctrl_sessions(hap_ctrl_data_t *ctrl)
                     sizeof((ctrl->info.id)));
 			/* TODO: Use some generic function and not a direct HTTPD function
 			 */
+            printf("---- trigger_close fd: %d\n", hap_priv.sessions[i]->conn_identifier);
             httpd_sess_trigger_close(hap_priv.server, hap_priv.sessions[i]->conn_identifier);
+            break;
 		}
 	}
+	printf("----hap_close_ctrl_sessions end ----\n");
 }
 
 int hap_get_ctrl_session_index(hap_secure_session_t *session)
@@ -116,7 +120,8 @@ static void hap_add_secure_session(hap_secure_session_t *session)
              * state.
              */
             hap_priv.disconnected_event_sent = false;
-			ESP_MFI_DEBUG(ESP_MFI_DEBUG_INFO, "HomeKit Session active");
+			//ESP_MFI_DEBUG(ESP_MFI_DEBUG_INFO, "HomeKit Session active");
+			ESP_MFI_DEBUG(ESP_MFI_DEBUG_INFO, "HomeKit Session active, fd: %d", session->conn_identifier);
 			break;
 		}
 	}
@@ -130,9 +135,11 @@ void hap_free_session(void *session)
 	for (i = 0; i < HAP_MAX_SESSIONS; i++) {
 		if (hap_priv.sessions[i] == session) {
 			/* Disable all characteristic notifications on this session */
+			int fd = (hap_priv.sessions[i])->conn_identifier;
 			hap_disable_all_char_notif(i);
 			hap_priv.sessions[i] = NULL;
-			ESP_MFI_DEBUG(ESP_MFI_DEBUG_INFO, "HomeKit Session terminated");
+			//ESP_MFI_DEBUG(ESP_MFI_DEBUG_INFO, "HomeKit Session terminated");
+			ESP_MFI_DEBUG(ESP_MFI_DEBUG_INFO, "HomeKit Session terminated, fd: %d", fd);
 			break;
 		}
 	}

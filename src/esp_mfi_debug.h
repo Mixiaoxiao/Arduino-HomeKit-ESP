@@ -108,7 +108,7 @@ uint32_t esp_mfi_get_debug_level(uint32_t level, uint32_t *color);
                                 __color_LINE,  ##__VA_ARGS__);                              \
         }                                                                                   \
     }
-    */
+
 #define ESP_MFI_DEBUG(l, fmt, ...)                                                          \
     {                                                                                       \
         uint32_t __color_LINE;                                                              \
@@ -122,6 +122,15 @@ uint32_t esp_mfi_get_debug_level(uint32_t level, uint32_t *color);
         if (l > esp_mfi_get_debug_level(l, &__color_LINE)) {                                \
         	printf("[%7lu] " fmt "\n", ((unsigned long) (esp_timer_get_time() / 1000ULL)), ##__VA_ARGS__);                           \
         }                                                                                   \
+    }*/
+
+#define ESP_MFI_DEBUG(l, fmt, ...)                                                          \
+    {                                                                                       \
+            printf("[%7lu] " fmt "\n", ((unsigned long) (esp_timer_get_time() / 1000ULL)), ##__VA_ARGS__);                              \
+    }
+#define ESP_MFI_DEBUG_INTR(l, fmt, ...)                                                          \
+    {                                                                                       \
+        	printf("[%7lu] " fmt "\n", ((unsigned long) (esp_timer_get_time() / 1000ULL)), ##__VA_ARGS__);                           \
     }
 #else /* ESP_MFI_DEBUG_ENABLE */
 #define ESP_MFI_DEBUG(l, fmt, ...)
